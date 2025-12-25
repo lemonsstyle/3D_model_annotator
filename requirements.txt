@@ -1,0 +1,11 @@
+# 打包工具
+pyinstaller>=5.0.0
+
+# 基本依赖项 (大多数已经包含在标准Python库中)
+# tkinter - 图形界面库 (Python标准库的一部分)
+# socket - 网络通信 (Python标准库的一部分)
+# http.server - HTTP服务器 (Python标准库的一部分)
+# webbrowser - 浏览器控制 (Python标准库的一部分)
+
+# 其他可能需要的依赖
+# 如果有使用到其他第三方库，请在这里添加 

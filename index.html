@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <!-- 禁止缓存相关的meta标签 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>三维模型标注查看器</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        #refresh-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: none;
+            color: white;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 9999;
+            padding: 5px 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            transition: all 0.2s ease;
+        }
+        #refresh-button:hover {
+            color: #ffcc00;
+            transform: scale(1.05);
+        }
+        
+        /* 添加加载状态提示样式 */
+        #loading-status {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 9990;
+            max-width: 80%;
+            display: none; /* 隐藏左下方的加载状态提示 */
+        }
+        
+        /* 添加调试信息区域样式 */
+        #debug-info {
+            display: none;
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 9995;
+            max-width: 300px;
+            max-height: 200px;
+            overflow: auto;
+        }
+        
+        /* 添加调试开关按钮样式 */
+        #debug-toggle {
+            position: fixed;
+            top: 20px;
+            left: 110px;
+            background: none;
+            color: white;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 9999;
+            padding: 5px 10px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            transition: all 0.2s ease;
+        }
+        #debug-toggle:hover {
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>三维模型教学查看</h1>
+    </div>
+    <div id="model-container"></div>
+    
+    <!-- 强制刷新按钮 -->
+    <button id="refresh-button" onclick="forceRefresh()" title="强制刷新页面并清除缓存&#10;如遇到模型加载不正确或显示问题，请点击此按钮">
+        <span class="desktop-text">强制刷新</span>
+        <span class="mobile-icon">🔄</span>
+    </button>
+    
+    <!-- 加载状态提示 (已隐藏) -->
+    <div id="loading-status">正在加载应用...</div>
+    
+    <!-- 调试信息区域 (默认隐藏) -->
+    <div id="debug-info"></div>
+    
+    <!-- 调试开关按钮 -->
+    <button id="debug-toggle" onclick="toggleDebugInfo()" title="显示/隐藏调试信息">
+        <span class="desktop-text">调试信息</span>
+        <span class="mobile-icon">🐛</span>
+    </button>
+    
+    <!-- 网络状态显示已隐藏 -->
+    <!-- <div id="network-status" style="position: fixed; top: 10px; right: 10px; padding: 5px; background: rgba(0,0,0,0.7); color: white; border-radius: 5px;"></div> -->
+    
+    <!-- Three.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/PLYLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/geometries/TextGeometry.js"></script>
+    
+    <!-- 强制刷新函数 -->
+    <script>
+        function forceRefresh() {
+            // 清除localStorage中的缓存版本
+            localStorage.removeItem('cacheVersion');
+            
+            // 清除应用缓存
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) caches.delete(name);
+                });
+            }
+            
+            // 强制刷新页面，绕过缓存
+            window.location.reload(true);
+        }
+    </script>
+    
+    <!-- 直接引入main.js，不使用动态加载 -->
+    <script src="js/main.js"></script>
+
+    <!-- 调试和日志功能 -->
+    <script>
+        // 更新加载状态的辅助函数
+        function updateLoadingStatus(message) {
+            // 不再显示状态信息，因为中央已有加载指示器
+            // const status = document.getElementById('loading-status');
+            // if (status) {
+            //     status.textContent = message;
+            // }
+        }
+        
+        // 添加调试信息的辅助函数
+        function addDebugInfo(message) {
+            const debug = document.getElementById('debug-info');
+            if (debug) {
+                // 不再自动显示调试区域
+                // debug.style.display = 'block';
+                
+                const line = document.createElement('div');
+                line.textContent = message;
+                debug.appendChild(line);
+                
+                // 保持最新消息可见
+                debug.scrollTop = debug.scrollHeight;
+                
+                // 限制调试信息数量，防止过多
+                if (debug.children.length > 100) {
+                    debug.removeChild(debug.firstChild);
+                }
+            }
+        }
+        
+        // 显示接口调用失败时的辅助信息
+        function showApiFailureHelp() {
+            updateLoadingStatus('API请求失败 - 请考虑使用Python服务器');
+            addDebugInfo('提示：使用http-server时无法处理API请求');
+            addDebugInfo('建议: 使用 python server.py 启动服务器');
+            addDebugInfo('正在尝试直接加载模型...');
+            
+            // API失败是重要错误，自动显示调试信息
+            document.getElementById('debug-info').style.display = 'block';
+        }
+        
+        // 监听错误事件
+        window.addEventListener('error', function(event) {
+            addDebugInfo('错误: ' + event.message);
+            console.error('页面错误: ' + event.message);
+        });
+        
+        // 重写console.log和console.error以捕获调试信息
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function() {
+            originalLog.apply(console, arguments);
+            addDebugInfo('LOG: ' + Array.from(arguments).join(' '));
+        };
+        
+        console.error = function() {
+            originalError.apply(console, arguments);
+            addDebugInfo('ERROR: ' + Array.from(arguments).join(' '));
+        };
+        
+        // 初始状态设置为加载完成
+        console.log('页面初始化完成，等待JavaScript加载...');
+    </script>
+    
+    <!-- 调试开关函数 -->
+    <script>
+        let debugEnabled = false;
+        
+        function toggleDebugInfo() {
+            debugEnabled = !debugEnabled;
+            const debug = document.getElementById('debug-info');
+            const toggleBtn = document.getElementById('debug-toggle');
+            
+            if (debug) {
+                if (debugEnabled) {
+                    debug.style.display = 'block';
+                    toggleBtn.style.backgroundColor = 'rgba(0, 128, 255, 0.8)'; // 蓝色表示激活
+                } else {
+                    debug.style.display = 'none';
+                    toggleBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.6)'; // 恢复默认颜色
+                }
+            }
+        }
+        
+        // 页面加载完成后不自动显示调试信息
+        window.addEventListener('load', function() {
+            console.log('页面完全加载完成');
+            // 调试信息默认隐藏，需要手动点击查看
+            // toggleDebugInfo();
+        });
+    </script>
+    
+    <!-- 网络状态检测已禁用 -->
+    <script>
+        // 网络状态检测功能已隐藏
+        /*
+        function checkNetworkStatus() {
+            const status = document.getElementById('network-status');
+            if (navigator.onLine) {
+                status.textContent = '网络状态: 已连接';
+                status.style.color = 'green';
+            } else {
+                status.textContent = '网络状态: 未连接';
+                status.style.color = 'red';
+            }
+        }
+
+        // 添加网络状态监听器
+        window.addEventListener('online', checkNetworkStatus);
+        window.addEventListener('offline', checkNetworkStatus);
+        */
+        
+        // 页面加载时进行服务器连接测试（保留连接测试功能，但不显示网络状态）
+        window.addEventListener('load', function() {
+            console.log('页面加载完成，开始检查服务器连接...');
+            
+            // 测试服务器连接
+            fetch('/api/models')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('服务器连接成功');
+                    addDebugInfo('服务器连接成功');
+                })
+                .catch(error => {
+                    console.error('服务器连接失败:', error);
+                    addDebugInfo(`服务器连接失败: ${error.message}`);
+                    addDebugInfo('请确保:');
+                    addDebugInfo('1. 服务器正在运行');
+                    addDebugInfo('2. 设备与服务器在同一局域网');
+                    addDebugInfo('3. 防火墙未阻止连接');
+                });
+        });
+    </script>
+</body>
+</html> 
