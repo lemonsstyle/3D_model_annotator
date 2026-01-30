@@ -12,7 +12,7 @@
 
 ## 使用方法
 
-1. 将您的PLY格式模型文件放入`models`文件夹中，并将文件命名为`temperature_sensor.ply`（或者修改`main.js`中的文件路径）
+1. 将您的PLY格式模型文件放入`models`文件夹中（没有该目录请自行创建），或者使用启动器选择一个包含PLY文件的文件夹。
 
 2. 如果需要，在`main.js`文件中的`createAnnotations`函数内修改标注数据：
 
@@ -26,14 +26,29 @@ const annotationData = [
 ];
 ```
 
-3. 使用Web服务器打开项目文件夹（直接在浏览器中打开HTML文件可能无法正常加载模型）。例如，您可以使用Python的简易HTTP服务器：
+3. 使用项目自带的服务器启动（推荐）：
 
-```bash
-cd 3d-model-annotator
-python -m http.server
-```
+   - 命令行方式：
 
-然后在浏览器中访问`http://localhost:8000`
+     ```bash
+     python server.py
+     ```
+
+     可选参数：
+     - `-p/--port` 指定端口（默认 8000）
+     - `-d/--models-dir` 指定PLY模型目录（不使用默认 `models` 目录）
+
+   - 图形界面方式：
+
+     ```bash
+     python launcher.py
+     ```
+
+     然后选择模型文件夹并启动服务器。
+
+4. 在浏览器中访问 `http://localhost:8000`，从左下角选择要加载的模型。
+
+> 说明：`python -m http.server` 只能提供静态文件，不包含 `/api/models` 接口，前端会请求失败并进入兜底逻辑。为保证模型列表功能正常，请使用 `server.py` 或 `launcher.py`。
 
 ## 自定义标注
 

@@ -35,8 +35,7 @@ document.body.appendChild(loadingElement);
 let fastLoadMode = false; // 快速加载模式
 
 // 添加全局变量
-let chunks = [];
-let dynamicLODEnabled = false;
+let dynamicLODEnabled = false; // 动态点大小开关（由性能模式控制）
 
 // 移动端相关全局变量
 let isMobileDevice = false;
@@ -531,9 +530,6 @@ function init() {
     // 检测设备类型
     detectDevice();
     
-    // 添加全局样式
-    addGlobalStyles();
-    
     // 不再创建强制刷新按钮，因为已经在HTML中定义了
     
     // 创建移动端组件（延迟创建，确保所有面板都已创建）
@@ -731,6 +727,7 @@ function init() {
     fastLoadMode = localStorage.getItem('fastLoadMode') === 'true';
     // 确保性能模式与快速加载模式同步
     isPerformanceMode = fastLoadMode;
+    dynamicLODEnabled = isPerformanceMode;
     
     // 创建颜色控制面板
     createColorControl();
@@ -749,361 +746,6 @@ function init() {
     
     // 获取模型列表并创建模型选择控制面板
     fetchModelList();
-}
-
-// 添加全局样式
-function addGlobalStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-        }
-        
-        .control-panel {
-            background: rgba(28, 28, 30, 0.85);
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            color: #fff;
-            padding: 12px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .panel-title {
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            text-align: center;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 8px;
-        }
-        
-        .section-title {
-            color: #fff;
-            font-size: 12px;
-            font-weight: 500;
-            margin: 12px 0 8px 0;
-            text-align: center;
-            letter-spacing: 0.3px;
-            opacity: 0.9;
-        }
-        
-        .control-button {
-            background: rgba(60, 60, 67, 0.7);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 12px;
-            margin: 4px 0;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.2s ease;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .control-button:hover {
-            background: rgba(99, 99, 102, 0.7);
-            transform: translateY(-1px);
-        }
-        
-        .control-button:active {
-            transform: translateY(1px);
-        }
-        
-        .cube-button {
-            height: 85px; /* 进一步增加高度，提供更多空间 */
-            padding: 10px;
-            position: relative;
-            margin-bottom: 8px;
-        }
-        
-        .cube-button::after {
-            content: attr(title);
-            position: absolute;
-            bottom: 3px; /* 调整文字位置，更靠近底部 */
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.8);
-            text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.8); /* 添加文字阴影使其更清晰 */
-            font-weight: 500; /* 稍微加粗 */
-        }
-        
-        /* 立方体容器的样式 */
-        .cube-container {
-            position: relative;
-            width: 35px; /* 增加立方体大小 */
-            height: 35px; /* 增加立方体大小 */
-            margin: 0 auto 30px; /* 显著增加下边距，与文字保持更大距离 */
-            transform-style: preserve-3d;
-            -webkit-transform-style: preserve-3d;
-            transform: rotateX(-20deg) rotateY(-30deg);
-            -webkit-transform: rotateX(-20deg) rotateY(-30deg);
-            transition: transform 0.3s;
-            -webkit-transition: -webkit-transform 0.3s;
-            top: 5px; /* 调整立方体位置，使其居中显示 */
-        }
-        
-        .cube-button:hover .cube-container {
-            transform: rotateX(-20deg) rotateY(-30deg) scale(1.15);
-            -webkit-transform: rotateX(-20deg) rotateY(-30deg) scale(1.15);
-        }
-        
-        .cube-button:hover::after {
-            color: rgba(255, 255, 255, 1); /* 悬停时文字更亮 */
-            text-shadow: 0px 0px 3px rgba(0, 0, 0, 0.9); /* 悬停时文字阴影更强 */
-        }
-        
-        /* 立方体面的样式 */
-        .cube-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border: 1px solid rgba(255,255,255,0.4);
-            transform-style: preserve-3d;
-            -webkit-transform-style: preserve-3d;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            box-shadow: 0 0 5px rgba(0,0,0,0.2) inset;
-        }
-        
-        .icon-button {
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-        
-        .grid-container {
-            display: grid;
-            grid-gap: 6px;
-        }
-        
-        .annotation {
-            background-color: rgba(28, 28, 30, 0.95); /* 降低透明度，增加不透明度 */
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            max-width: 220px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* 增强阴影 */
-            border: 1px solid rgba(255, 255, 255, 0.25); /* 增强边框 */
-            transition: all 0.2s ease;
-            backdrop-filter: blur(8px); /* 增强模糊效果 */
-            font-weight: 500; /* 稍微加粗文字 */
-            letter-spacing: 0.3px; /* 增加字间距提高可读性 */
-        }
-        
-        .annotation:hover {
-            background-color: rgba(44, 44, 46, 1); /* 完全不透明 */
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.6);
-            transform: translateY(-1px); /* 添加微小的悬浮效果 */
-        }
-        
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(28, 28, 30, 0.9);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 2000;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(5px);
-        }
-        
-        select, button {
-            font-family: inherit;
-        }
-        
-        /* 桌面端默认显示文字，隐藏图标 */
-        #refresh-button .mobile-icon,
-        #debug-toggle .mobile-icon {
-            display: none;
-        }
-        
-        #refresh-button .desktop-text,
-        #debug-toggle .desktop-text {
-            display: inline;
-        }
-        
-        /* 移动端响应式设计 */
-        @media (max-width: 768px) {
-            /* 控制面板移动端适配 */
-            .control-panel {
-                position: fixed !important;
-                width: calc(100vw - 20px) !important;
-                max-width: none !important;
-                left: 10px !important;
-                right: 10px !important;
-                transform: translateY(0) !important;
-            }
-            
-            /* 移动端底部工具栏 */
-            .mobile-bottom-toolbar {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: rgba(28, 28, 30, 0.95);
-                padding: 10px;
-                display: flex;
-                justify-content: space-around;
-                align-items: center;
-                z-index: 1000;
-                backdrop-filter: blur(10px);
-                border-top: 1px solid rgba(255, 255, 255, 0.1);
-                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-            }
-            
-            /* 移动端按钮适配 */
-            .control-button {
-                min-height: 44px !important;
-                font-size: 16px !important;
-                padding: 12px 16px !important;
-                margin: 6px 0 !important;
-            }
-            
-            .icon-button {
-                width: 44px !important;
-                height: 44px !important;
-                font-size: 20px !important;
-                min-width: 44px !important;
-            }
-            
-            /* 移动端面板标题 */
-            .panel-title {
-                font-size: 16px !important;
-                margin-bottom: 16px !important;
-                padding-bottom: 12px !important;
-            }
-            
-            .section-title {
-                font-size: 14px !important;
-                margin: 16px 0 12px 0 !important;
-            }
-            
-            /* 移动端网格布局 */
-            .grid-container {
-                grid-gap: 8px !important;
-            }
-            
-            /* 移动端选择器 */
-            select {
-                font-size: 16px !important;
-                padding: 12px 14px !important;
-                min-height: 44px !important;
-            }
-            
-            /* 移动端顶部按钮 - 隐藏刷新和调试按钮 */
-            #refresh-button, #debug-toggle {
-                display: none !important; /* 【移动端隐藏】隐藏刷新和调试信息按钮 */
-            }
-            
-            /* 移动端按钮相关样式已移除，因为按钮已隐藏 */
-            
-            /* 移动端底部提示 */
-            #bottom-flip-info {
-                font-size: 12px !important;
-                bottom: 70px !important; /* 为底部工具栏留出空间 */
-                padding: 8px !important;
-            }
-            
-            /* 移动端加载指示器 */
-            #loading {
-                font-size: 16px !important;
-                padding: 20px 30px !important;
-                max-width: calc(100vw - 40px) !important;
-            }
-            
-            /* 移动端标注样式 */
-            .annotation {
-                font-size: 14px !important;
-                padding: 10px 14px !important;
-                max-width: calc(100vw - 40px) !important;
-            }
-            
-            /* 隐藏面板按钮在移动端的适配 */
-            .mobile-hide-panels-btn {
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                background: rgba(28, 28, 30, 0.9);
-                color: white;
-                border: none;
-                border-radius: 6px;
-                padding: 8px 12px;
-                font-size: 14px;
-                cursor: pointer;
-                z-index: 1001;
-                backdrop-filter: blur(5px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
-            /* 移动端面板堆叠 */
-            .control-panel.mobile-stacked {
-                position: relative !important;
-                margin-bottom: 10px !important;
-                top: auto !important;
-                left: auto !important;
-                right: auto !important;
-                bottom: auto !important;
-            }
-            
-            /* 移动端面板容器 */
-            .mobile-panels-container {
-                position: fixed;
-                top: 60px;
-                left: 10px;
-                right: 10px;
-                bottom: 70px;
-                overflow-y: auto;
-                z-index: 999;
-                padding: 10px 0;
-                display: none; /* 默认隐藏 */
-            }
-            
-            .mobile-panels-container.show {
-                display: block;
-            }
-        }
-        
-        /* 平板端适配 (769px - 1024px) */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .control-panel {
-                width: 280px !important;
-            }
-            
-            .control-button {
-                font-size: 14px !important;
-                padding: 10px 14px !important;
-            }
-            
-            .icon-button {
-                width: 42px !important;
-                height: 42px !important;
-                font-size: 19px !important;
-            }
-        }
-    `;
-    document.head.appendChild(style);
 }
 
 // 从服务器获取模型列表
@@ -3497,6 +3139,7 @@ function togglePerformanceMode() {
     const modelScale = modelGroup.scale.clone();
     
     isPerformanceMode = !isPerformanceMode;
+    dynamicLODEnabled = isPerformanceMode;
     
     // 当前点材质大小
     let currentSize = 0;
@@ -3588,43 +3231,6 @@ function togglePerformanceMode() {
     }
 }
 
-// 添加动态LOD函数
-function updateDynamicLOD() {
-    if (!camera || chunks.length === 0) return;
-    
-    chunks.forEach(chunk => {
-        if (!chunk.material) return;
-        
-        // 计算距离
-        const chunkCenter = new THREE.Vector3();
-        chunk.geometry.computeBoundingSphere();
-        if (chunk.geometry.boundingSphere) {
-            chunkCenter.copy(chunk.geometry.boundingSphere.center);
-        }
-        
-        // 将局部坐标转换为世界坐标
-        chunk.updateMatrixWorld();
-        chunkCenter.applyMatrix4(chunk.matrixWorld);
-        
-        const distance = camera.position.distanceTo(chunkCenter);
-        
-        // 根据距离调整点大小
-        if (distance > 100) {
-            // 远距离时使用更大的点
-            chunk.material.size = isLargeModel ? 0.04 : 0.02;
-        } else if (distance > 50) {
-            // 中等距离
-            chunk.material.size = isLargeModel ? 0.02 : 0.01;
-        } else {
-            // 近距离使用默认大小
-            chunk.material.size = isLargeModel ? 0.01 : 0.005;
-        }
-    });
-}
-
-// 确保添加全局变量
-let animationLoopUpdated = false;
-
 // 启动应用
 init();
 animate(); 
@@ -3703,38 +3309,13 @@ function addAnnotationAt(position, content) {
     
     // 创建内容容器
     const contentContainer = document.createElement('div');
-    contentContainer.style.paddingRight = '20px'; // 为删除按钮留出空间
+    contentContainer.className = 'annotation-content';
     contentContainer.textContent = content;
     annotationElement.appendChild(contentContainer);
-    
-    annotationElement.style.display = 'none'; // 初始隐藏
-    
-    // 设置标注样式，使其更易于阅读
-    annotationElement.style.backgroundColor = 'rgba(20, 20, 22, 0.95)'; // 更深的颜色，几乎不透明
-    annotationElement.style.color = 'white';
-    annotationElement.style.padding = '6px 10px'; // 增加内边距
-    annotationElement.style.borderRadius = '4px';
-    annotationElement.style.fontSize = '12px';
-    annotationElement.style.fontWeight = '500'; // 字体加粗
-    annotationElement.style.maxWidth = '200px';
-    annotationElement.style.boxShadow = '0 3px 8px rgba(0,0,0,0.7)'; // 增强阴影
-    annotationElement.style.border = '1px solid rgba(255, 255, 255, 0.25)'; // 添加边框
-    annotationElement.style.pointerEvents = 'auto';
-    annotationElement.style.cursor = 'pointer';
-    annotationElement.style.zIndex = '1000';
-    annotationElement.style.position = 'relative'; // 为删除按钮定位
-    annotationElement.style.letterSpacing = '0.3px'; // 增加字间距
     
     // 添加连接线
     const lineElement = document.createElement('div');
     lineElement.className = 'annotation-line';
-    lineElement.style.position = 'absolute';
-    lineElement.style.width = '1px';
-    lineElement.style.height = '30px';
-    lineElement.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
-    lineElement.style.transformOrigin = 'top center';
-    lineElement.style.pointerEvents = 'none';
-    lineElement.style.zIndex = '999';
     document.body.appendChild(lineElement);
     
     // 添加编辑功能到标注
@@ -3749,20 +3330,8 @@ function addAnnotationAt(position, content) {
     
     // 添加删除按钮
     const deleteBtn = document.createElement('span');
+    deleteBtn.className = 'annotation-delete';
     deleteBtn.textContent = '×';
-    deleteBtn.style.position = 'absolute';
-    deleteBtn.style.top = '50%';
-    deleteBtn.style.right = '5px';
-    deleteBtn.style.transform = 'translateY(-50%)';
-    deleteBtn.style.cursor = 'pointer';
-    deleteBtn.style.fontWeight = 'bold';
-    deleteBtn.style.color = '#fff';
-    deleteBtn.style.fontSize = '14px';
-    deleteBtn.style.lineHeight = '14px';
-    deleteBtn.style.padding = '0 3px';
-    deleteBtn.style.borderRadius = '2px';
-    deleteBtn.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
-    deleteBtn.style.zIndex = '1001'; // 确保按钮在最上层
     deleteBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         if (confirm('确定要删除此标注吗？')) {
